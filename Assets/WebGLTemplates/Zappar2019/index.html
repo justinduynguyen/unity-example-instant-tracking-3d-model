@@ -2,125 +2,221 @@
 <!-- NFYNT -->
 <!DOCTYPE html>
 <html lang="en-us">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>%UNITY_WEB_NAME%</title>
     <style>
-        html {
-            box-sizing: border-box;
-        }
-
-        *,
-        *:before,
-        *:after {
-            box-sizing: inherit;
-        }
-
-        body {
-            margin: 0;
-            background: #444;
-        }
-
-        html, body {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-        }
-
-        #gameContainer {
-            width: 100vw;
-            height: 100vh;
-            position: fixed;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            position: fixed;
-            display: block;
-        }
-
-        /* try to handle mobile dialog */
-        canvas+* {
-            z-index: 2;
-        }
-
-        .progress {
-            margin: 1.5em;
-            border: 1px solid white;
-            width: 50vw;
-            display: none;
-        }
-
-        .progress .full {
-            margin: 2px;
-            background: white;
-            height: 1em;
-            transform-origin: top left;
-        }
-
-        #loader {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+      html {
+        box-sizing: border-box;
+      }
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+      body {
+        margin: 0;
+        background: #444;
+      }
+      html,
+      body {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+      #gameContainer {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        display: block;
+      }
+      /* try to handle mobile dialog */
+      canvas + * {
+        z-index: 2;
+      }
+      .progress {
+        margin: 1.5em;
+        border: 1px solid white;
+        width: 50vw;
+        display: none;
+      }
+      .progress .full {
+        margin: 2px;
+        background: white;
+        height: 1em;
+        transform-origin: top left;
+      }
+      #loader {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      #captureScreen {
+        background-color: #ffffff; /* Green */
+        border: none;
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        position: fixed;
+        left: 50%;
+        bottom: 0px;
+        transform: translate(-50%, -50%);
+        margin: 0 auto;
+        z-index: 10;
+      }
+      #screenshotPreview {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        /* bring your own prefixes */
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      #screenShotContainer {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        /* bring your own prefixes */
+        transform: translate(-50%, -50%);
+        width: 90%;
+        height: 90%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        z-index: 9;
+      }
     </style>
-</head>
-
-<body>
-    <script type="text/javascript" src="https://libs.zappar.com/zappar-cv/2.0.0/zappar-cv.js"></script>
-
+  </head>
+  <body>
+    <script
+      type="text/javascript"
+      src="https://libs.zappar.com/zappar-cv/2.0.0/zappar-cv.js"
+    ></script>
+    <div id="captureScreen" style="display: none"></div>
+    <div id="screenShotContainer" style="display: none">
+      <img id="screenshotPreview" /><img />
+      <button
+        class="btn"
+        id="saveScreenshot"
+        style="
+          position: absolute;
+          left: 50%;
+          bottom: 0px;
+          transform: translate(-50%, -50%);
+          width: 100px;
+          height: 50px;
+        "
+      >
+        Save
+      </button>
+      <button
+        id="exitScreenshot"
+        style="position: absolute; top: 8px; right: 16px; font-size: 18px"
+      >
+        Exit
+      </button>
+    </div>
     <div id="gameContainer"></div>
     <div id="loader">
-        <div class="progress">
-            <div class="full"></div>
-        </div>
+      <div class="progress">
+        <div class="full"></div>
+      </div>
     </div>
-
     <script src="%UNITY_WEBGL_LOADER_URL%"></script>
     <script>
-        var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
-        window.zappar=ZCV.initialize();
-        const loader = document.querySelector("#loader");
-        var gameInstance; //= UnityLoader.instantiate("gameContainer", "%UNITY_WEBGL_BUILD_URL%", { onProgress: UnityProgress }); 
+      var canvas;
+      const screenshotPreview = document.getElementById("screenshotPreview");
+      const screenShotContainer = document.getElementById(
+        "screenShotContainer"
+      );
+      const captureScreen = document.getElementById("captureScreen");
+      const saveScreenshot = document.getElementById("saveScreenshot");
+      const exitScreenshot = document.getElementById("exitScreenshot");
+      captureScreen.addEventListener("click", () => {
+        let image = new Image();
+        screenshotPreview.src = document.getElementById("#canvas").toDataURL();
+        screenShotContainer.style.display = "block";
+        captureScreen.style.display = "none";
+      });
+      saveScreenshot.addEventListener("click", () => {
+        screenShotContainer.style.display = "none";
+        captureScreen.style.display = "block";
+        var a = document.createElement("a");
+        a.href = screenshotPreview.src.replace(
+          "image/png",
+          "image/octet-stream"
+        );
+        a.download = "canvas.png";
+        a.click();
+      });
+      exitScreenshot.addEventListener("click", () => {
+        screenShotContainer.style.display = "none";
+        captureScreen.style.display = "block";
+      });
 
-        ZAPPAR_PERMISSIONS_IMPLEMENTATION
-
-        function WaitForZCVLoad(){            
-            if (zappar.loaded()) { 
-                //loader.style.display = "none";  
-                gameInstance= UnityLoader.instantiate("gameContainer", "%UNITY_WEBGL_BUILD_URL%", { onProgress: UnityProgress }); 
-                return; 
+      var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
+      window.zappar = ZCV.initialize();
+      const loader = document.querySelector("#loader");
+      var gameInstance; //= UnityLoader.instantiate("gameContainer", "%UNITY_WEBGL_BUILD_URL%", { onProgress: UnityProgress });
+      ZAPPAR_PERMISSIONS_IMPLEMENTATION;
+      function WaitForZCVLoad() {
+        if (zappar.loaded()) {
+          //loader.style.display = "none";
+          gameInstance = UnityLoader.instantiate(
+            "gameContainer",
+            "%UNITY_WEBGL_BUILD_URL%",
+            {
+              onProgress: UnityProgress,
+              Module: {
+                webglContextAttributes: { preserveDrawingBuffer: true },
+              },
             }
-            setTimeout(WaitForZCVLoad, 500);
+          );
+          return;
         }
-
-        function UnityProgress(gameInstance, progress) {
-            if (!gameInstance.Module) {
-                return;
-            }
-            window.uarGameInstance = gameInstance;
-            if (!gameInstance.progress) {
-                const progress = document.querySelector("#loader .progress");
-                progress.style.display = "block";
-                gameInstance.progress = progress.querySelector(".full");
-            }
-            gameInstance.progress.style.transform = `scaleX(${progress})`;
-            if (progress === 1 && !gameInstance.removeTimeout) {
-                gameInstance.removeTimeout = setTimeout(function () {
-                    loader.style.display = "none";
-                }, 0); // optionally set a delay in here.
-            }
+        setTimeout(WaitForZCVLoad, 500);
+      }
+      function UnityProgress(gameInstance, progress) {
+        if (!gameInstance.Module) {
+          return;
         }
-
+        window.uarGameInstance = gameInstance;
+        if (!gameInstance.progress) {
+          const progress = document.querySelector("#loader .progress");
+          progress.style.display = "block";
+          gameInstance.progress = progress.querySelector(".full");
+        }
+        gameInstance.progress.style.transform = `scaleX(${progress})`;
+        if (progress === 1 && !gameInstance.removeTimeout) {
+          gameInstance.removeTimeout = setTimeout(function () {
+            loader.style.display = "none";
+            canvas = document.getElementById("gameContainer");
+            canvas.addEventListener("pointerdown", (e) => {
+              captureScreen.style.display = "block";
+            });
+          }, 0); // optionally set a delay in here.
+        }
+      }
     </script>
-</body>
-
+  </body>
 </html>

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using Zappar;
 
 public class StoryController : MonoBehaviour
 {
@@ -9,7 +10,7 @@ public class StoryController : MonoBehaviour
     // Start is called before the first frame update
     private void Start()
     {
-        _animator = GetComponent<Animator>(); 
+        _animator = _settings.Unicorn.GetComponent<Animator>(); 
         _settings.Pose_1.onClick.AddListener(() =>
         {
             _animator.SetTrigger("Pose_1");
@@ -34,7 +35,12 @@ public class StoryController : MonoBehaviour
         if (Input.touchCount > 0)
         {
             if (!_settings.ControlPosePanel.activeInHierarchy)
+            {
                 _settings.ControlPosePanel.SetActive(true);
+                _settings.Instruction.SetActive(false);
+                _settings.PlacementObject.SetActive(false);
+                _settings.Tracker.PlaceTrackerAnchor();
+            }
         }
     }
 
@@ -45,5 +51,8 @@ public class StoryController : MonoBehaviour
         public GameObject ControlPosePanel;
         public Button Pose_1, Pose_2, Pose_3, Pose_4;
         public GameObject Unicorn;
+        public GameObject Instruction;
+        public GameObject PlacementObject;
+        public ZapparInstantTrackingTarget Tracker;
     }
 }
